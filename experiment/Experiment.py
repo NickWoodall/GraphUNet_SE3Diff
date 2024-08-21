@@ -60,6 +60,7 @@ class Experiment:
         self.log_freq = conf['log_freq']
         self.ckpt_freq = conf['ckpt_freq']
         self.early_ckpt = conf['early_chkpt']
+        self.t_range = [conf['min_t'], conf['max_t']]
         
         
         self.meta_data_path = conf['meta_data_path']
@@ -189,7 +190,7 @@ class Experiment:
         
         
         self.dataset = PDBDataSet_GraphCon.smallPDBDataset( self._diffuser , meta_data_path = self.meta_data_path, 
-                             filter_dict=False, maxlen=self.limit)
+                             filter_dict=False, maxlen=self.limit, t_range=self.t_range)
         
         self.train_sample = PDBDataSet_GraphCon.TrainSampler(self.B, self.dataset, sample_mode='single_length')
         

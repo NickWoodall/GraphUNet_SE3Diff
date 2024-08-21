@@ -14,7 +14,7 @@
     "latent_pool_type": "avg",
     "t_size": 12,
     "min_t": 0.001,
-    "max_t": 1.0,
+    "max_t": 0.2,
     "mult": 2,
     "zero_lin": true,
     "use_tdeg1": true,
