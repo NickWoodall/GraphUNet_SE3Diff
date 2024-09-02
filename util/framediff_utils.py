@@ -4,13 +4,12 @@ from typing import Any
 import numpy as np
 from typing import List, Dict, Any
 import collections
-from omegaconf import OmegaConf
 import dataclasses
-from data import chemical
-from data import residue_constants
-from data import protein
-from data import so3_utils
-from openfold.utils import rigid_utils
+from util import chemical
+from util import residue_constants
+from util import protein
+from util import so3_utils
+from util import rigid_utils
 from scipy.spatial.transform import Rotation
 from Bio import PDB
 from Bio.PDB.Chain import Chain
@@ -103,9 +102,6 @@ def read_pkl(read_path: str, verbose=True, use_torch=False, map_location=None):
             if verbose:
                 print(f'Failed to read {read_path}. First error: {e}\n Second error: {e2}')
             raise(e)
-
-def compare_conf(conf1, conf2):
-    return OmegaConf.to_yaml(conf1) == OmegaConf.to_yaml(conf2)
 
 def parse_pdb(filename):
     lines = open(filename,'r').readlines()
