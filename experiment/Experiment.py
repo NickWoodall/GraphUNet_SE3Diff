@@ -29,7 +29,8 @@ class Experiment:
                  cur_epoch=None,
                  name='gu_null',
                  cast_type=torch.float32,
-                 ckpt_opt=None):
+                 ckpt_opt=None, 
+                 swap_metadir=False):
         """Initialize experiment.
         Args:
             exp_cfg: Experiment configuration.
@@ -55,6 +56,7 @@ class Experiment:
         self.N_CA_dist = (PDBDataSet_GraphCon.N_CA_dist/self.coord_scale).to(self.device)
         self.C_CA_dist = (PDBDataSet_GraphCon.C_CA_dist/self.coord_scale).to(self.device)
         self.cast_type = cast_type
+        self.swap_metadir=swap_metadir
         
         self.num_epoch = conf['num_epoch']
         self.log_freq = conf['log_freq']
@@ -190,7 +192,7 @@ class Experiment:
         
         
         self.dataset = PDBDataSet_GraphCon.smallPDBDataset( self._diffuser , meta_data_path = self.meta_data_path, 
-                             filter_dict=False, maxlen=self.limit, t_range=self.t_range)
+                             filter_dict=False, maxlen=self.limit, t_range=self.t_range, swap_metadir=self.swap_metadir)
         
         self.train_sample = PDBDataSet_GraphCon.TrainSampler(self.B, self.dataset, sample_mode='single_length')
         

@@ -150,14 +150,17 @@ class smallPDBDataset(torch.utils.data.Dataset):
             is_training=True,
             input_t=None,
             t_range=None,
+            swap_metadir=False
         ):
         #self._log = logging.getLogger(__name__)
         self._is_training = is_training
         self.meta_data_path = meta_data_path
+        self.swap_metadir=swap_metadir
         self._init_metadata(filter_dict=filter_dict,maxlen=maxlen) #includes create split that saves self.csv
         self._diffuser = diffuser
         self.input_t = input_t
         self.t_range = t_range
+
         
     @property
     def is_training(self):
@@ -176,6 +179,13 @@ class smallPDBDataset(torch.utils.data.Dataset):
         
         #meta_data_path = '/mnt/h/datasets/p200/metadata.csv'
         pdb_csv = pd.read_csv(self.meta_data_path)
+        
+        if self.swap_metadir: #file location is hard code into meta data, this will take the directory location of the meta_data_csv and apply it to the filenames
+            dir_path = os.path.dirname(os.path.realpath(self.meta_data_path))
+
+            pdb_csv['processed_path'] = pdb_csv['processed_path'].apply(lambda x: os.path.join(dir_path,os.path.basename(x)))
+
+
         
         if filter_dict:
             filter_conf = {'allowed_oligomer': ['monomeric'],
