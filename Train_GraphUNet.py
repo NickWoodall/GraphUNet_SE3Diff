@@ -35,6 +35,8 @@ if __name__ == '__main__':
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("-c", '--config_path',  help='path to config file in json format',type=str)
     group.add_argument("-k", '--checkpoint_file', help='previous checkpoint to load',type=str)
+    group.add_argument("-s", '--swap_metadatadir', help='replace directory with metadata.csv directory for moving dataset folders after init',type=strhqqqq,
+                       action='store_true')
 
     args = parser.parse_args()
 
@@ -44,7 +46,7 @@ if __name__ == '__main__':
         ckpt_opt = torch.load(args.checkpoint_file)['optimizer']
         conf = torch.load(args.checkpoint_file)['conf']
 
-        exp = Experiment(conf,name=args.name, ckpt_model=ckpt_model, ckpt_opt=ckpt_opt)
+        exp = Experiment(conf,name=args.name, ckpt_model=ckpt_model, ckpt_opt=ckpt_opt,swap_metadir=args.swap_metadatadir)
 
     else:
         with open(args.config_path, 'r') as f:
