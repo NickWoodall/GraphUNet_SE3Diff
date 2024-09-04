@@ -525,7 +525,7 @@ class Experiment:
         L = protein_length
         B = self.B
 
-        noised_dict, batched_t = self._diffuser.sample_ref(self.B, prot_length=L) #implied t=1.0
+        noised_dict, batched_t = self._diffuser.sample_ref(self.B, prot_length=L, device=self.device) #implied t=1.0
         pred_dict = {}
 
         start1 = 1.0

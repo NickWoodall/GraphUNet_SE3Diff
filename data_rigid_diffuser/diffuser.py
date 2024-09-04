@@ -322,13 +322,13 @@ class FrameDiffNoise(torch.nn.Module):
         
         return trans_score, rot_score
     
-    def sample_ref(self,batch_size,prot_length=65):
+    def sample_ref(self,batch_size,prot_length=65, device='cuda'):
     
         B = batch_size
         L = prot_length
         cast = torch.float32
 
-        batched_t = torch.tensor(np.ones((B,)),dtype=cast,device='cuda')
+        batched_t = torch.tensor(np.ones((B,)),dtype=cast,device=device)
         rot_ref = self.so3d.sample_ref(n_samples=B*L)
         trans_ref = self.r3d.sample_ref(n_samples=B*L)
 
