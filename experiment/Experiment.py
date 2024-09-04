@@ -47,6 +47,7 @@ class Experiment:
 
         self.name=name
         self._conf = conf
+        self.use_cuda = conf['cuda']
         if conf['cuda']:
             self.device = 'cuda'
         else:
@@ -350,7 +351,7 @@ class Experiment:
         CC_n = CA_n + batch_feats['C_CA_noised'].reshape(B, L, 3)
         noise_xyz =  torch.cat((NC_n,CA_n,CC_n),dim=2).reshape(B,L,3,3)
 
-        x = self._graphmaker.prep_for_network(noised_dict)
+        x = self._graphmaker.prep_for_network(noised_dict, cuda= self.use_cuda)
         out = self._model(x, batch_feats['t'])
         CA_p = out['1'][:,0,:].reshape(B, L, 3) + CA_n #translation of Calpha
         Qs = out['1'][:,1,:] # rotation of frame
