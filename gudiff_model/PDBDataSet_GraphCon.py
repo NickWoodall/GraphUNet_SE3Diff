@@ -182,8 +182,7 @@ class smallPDBDataset(torch.utils.data.Dataset):
         
         if self.swap_metadir: #file location is hard code into meta data, this will take the directory location of the meta_data_csv and apply it to the filenames
             dir_path = os.path.dirname(os.path.realpath(self.meta_data_path))
-
-            pdb_csv['processed_path'] = pdb_csv['processed_path'].apply(lambda x: os.path.join(dir_path,os.path.basename(x)))
+            pdb_csv['processed_path'] = pdb_csv['processed_path'].apply(lambda x: os.path.join(dir_path, os.path.basename((os.path.dirname(x))) ,os.path.basename(x)))
 
 
         

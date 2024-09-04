@@ -223,9 +223,10 @@ class Experiment:
         for epoch in range(self.trained_epochs, self.num_epoch+self.trained_epochs):
             print('epoch', epoch)
             self._log.info(f'epoch {epoch}: start')
-            print('mem_used',torch.cuda.memory_allocated('cuda:0'))
-            mem_alloc = torch.cuda.memory_allocated('cuda:0')
-            self._log.info(f'mem_used {mem_alloc}')
+            if self.device == 'cuda':
+                print('mem_used',torch.cuda.memory_allocated('cuda:0'))
+                mem_alloc = torch.cuda.memory_allocated('cuda:0')
+                self._log.info(f'mem_used {mem_alloc}')
             #this currently returns nothing
             epoch_log = self.train_epoch(train_loader, valid_loader, epoch=epoch, return_logs=return_logs)
             if return_logs: 
