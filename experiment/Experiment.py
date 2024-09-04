@@ -398,7 +398,7 @@ class Experiment:
         CC_n = CA_n + batch_feats['C_CA_noised'].reshape(B, L, 3)
         noise_xyz =  torch.cat((NC_n,CA_n,CC_n),dim=2).reshape(B,L,3,3)
 
-        x = self._graphmaker.prep_for_network(noised_dict)
+        x = self._graphmaker.prep_for_network(noised_dict, cuda=self.use_cuda)
         
         with torch.no_grad():
             out = self._model(x, batch_feats['t'])
@@ -496,7 +496,7 @@ class Experiment:
     
         CA_n = noised_dict['CA'].to(self.device)
 
-        x = self._graphmaker.prep_for_network(noised_dict)
+        x = self._graphmaker.prep_for_network(noised_dict,  self.use_cuda)
         
         with torch.no_grad():
             out = self._model(x, batched_t)
