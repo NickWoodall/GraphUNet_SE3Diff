@@ -28,7 +28,7 @@
     "early_chkpt": 2,
     "coord_scale": 10.0,
     "dataset_max": 5000,
-    "meta_data_path": "/mnt/h/datasets/bCov_4H/metadata.csv",
+    "meta_data_path": "/content/gdrive/My Drive/datasets/bCov_4H/metadata.csv",
     "sample_mode": "single_length",
     "ckpt_dir": "GUN_checkpoints/",
     "eval_dir": "Eval_Direc/",
