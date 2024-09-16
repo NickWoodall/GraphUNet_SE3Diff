@@ -376,7 +376,7 @@ class Experiment:
     def generate_tbatch(self, index_in, input_t):
         batch_list = []
         if len(index_in)<1:
-            index_in = np.zeros((len(input_t),))
+            index_in = np.zeros((len(input_t),),dtype=int)
         for i,t in enumerate(input_t):
             if i >= len(index_in):
                 batch_list.append(self.dataset.get_specific_t(index_in[-1], input_t[i]))
