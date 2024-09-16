@@ -7,11 +7,16 @@ import collections
 #from omegaconf import OmegaConf
 import dataclasses
 # from se3_diffuse import chemical
-#import residue_constants
-from se3_diffuse import residue_constants
+try:
+    import residue_constants
+    import so3_utils
+    import rigid_utils
+except:
+    from se3_diffuse import residue_constants
+    from se3_diffuse import so3_utils
+    from se3_diffuse import rigid_utils
 # from se3_diffuse import protein
-import so3_utils
-import rigid_utils
+
 from scipy.spatial.transform import Rotation
 from Bio import PDB
 from Bio.PDB.Chain import Chain
