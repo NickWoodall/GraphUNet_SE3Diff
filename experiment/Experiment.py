@@ -375,8 +375,13 @@ class Experiment:
     
     def generate_tbatch(self, index_in, input_t):
         batch_list = []
+        if len(index_in)<1:
+            index_in = np.zeros((len(input_t),))
         for i,t in enumerate(input_t):
-            batch_list.append(self.dataset.get_specific_t(index_in[i], input_t[i]))
+            if i >= len(index_in):
+                batch_list.append(self.dataset.get_specific_t(index_in[-1], input_t[i]))
+            else:
+                batch_list.append(self.dataset.get_specific_t(index_in[i], input_t[i]))
 
         batch_feats = {}
         for k in batch_list[0].keys():
