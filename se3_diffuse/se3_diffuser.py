@@ -1,10 +1,10 @@
 """SE(3) diffusion methods."""
 import numpy as np
-from se3_diffuse import so3_diffuser
-from se3_diffuse import r3_diffuser
+import so3_diffuser
+import r3_diffuser
 from scipy.spatial.transform import Rotation
-from se3_diffuse import rigid_utils as ru
-from se3_diffuse import utils as du
+import rigid_utils as ru
+import utils as du
 import torch
 import logging
 import yaml
