@@ -1,7 +1,7 @@
 """SO(3) diffusion methods."""
 import numpy as np
 import os
-from se3_diffuse import utils as du
+import utils as du
 import logging
 import torch
 

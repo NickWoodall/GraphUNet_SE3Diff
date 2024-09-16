@@ -8,6 +8,7 @@ import collections
 import dataclasses
 # from se3_diffuse import chemical
 import residue_constants
+from se3_diffuse import residue_constants
 # from se3_diffuse import protein
 import so3_utils
 import rigid_utils
