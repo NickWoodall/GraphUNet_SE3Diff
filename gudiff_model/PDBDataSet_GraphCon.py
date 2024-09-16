@@ -191,7 +191,8 @@ class smallPDBDataset(torch.utils.data.Dataset):
                            'max_loop_percent': 0.75}
             pdb_csv = pdb_csv[pdb_csv.oligomeric_detail.isin(filter_conf['allowed_oligomer'])]
             pdb_csv = pdb_csv[pdb_csv.coil_percent < filter_conf['max_loop_percent']]
-            pdb_csv = pdb_csv[pdb_csv.modeled_seq_len > 45]
+            pdb_csv = pdb_csv[pdb_csv.modeled_seq_len > 900]
+            pdb_csv = pdb_csv[pdb_csv.modeled_seq_len < 1000]
             pdb_csv = pdb_csv.sort_values('modeled_seq_len', ascending=False)
             
         if maxlen is not None:
