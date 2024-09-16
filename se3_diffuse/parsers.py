@@ -2,8 +2,8 @@
 from Bio.PDB.Chain import Chain
 import numpy as np
 
-from data import residue_constants
-from data import protein
+import residue_constants
+import protein
 
 Protein = protein.Protein
 

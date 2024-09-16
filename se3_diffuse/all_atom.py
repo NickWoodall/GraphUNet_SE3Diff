@@ -1,6 +1,6 @@
 """Utilities for calculating all atom representations."""
 import torch
-from data import residue_constants
+import residue_constants
 from openfold.utils import rigid_utils as ru
 from openfold.data import data_transforms
 from openfold.utils import feats

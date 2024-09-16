@@ -20,9 +20,9 @@ import numpy as np
 import mdtraj as md
 
 
-from data import utils as du
-from data import errors
-from data import parsers
+import utils as du
+import errors
+import parsers
 
 
 # Define the parser

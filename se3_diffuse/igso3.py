@@ -1,8 +1,8 @@
 """Parts of this file were developed in conjunction with the DiffDock authors.
 https://github.com/gcorso/DiffDock 
 """
-from data import so3_utils
-from data import utils as du
+import so3_utils
+import utils as du
 import os
 import torch
 
