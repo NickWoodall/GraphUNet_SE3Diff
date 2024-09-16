@@ -7,3 +7,12 @@ conda install pandas -y
 conda install numba -y
 conda install packaging
 conda install torchdata
+
+
+pip install  dgl -f https://data.dgl.ai/wheels/torch-2.1/cu121/repo.html
+pip3 install torch torchvision torchaudio
+pip install numba
+pip install e3nn
+pip install dm-tree
+pip install biopython
+
