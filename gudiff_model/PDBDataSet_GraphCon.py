@@ -191,6 +191,7 @@ class smallPDBDataset(torch.utils.data.Dataset):
                            'max_loop_percent': 0.75}
             pdb_csv = pdb_csv[pdb_csv.oligomeric_detail.isin(filter_conf['allowed_oligomer'])]
             pdb_csv = pdb_csv[pdb_csv.coil_percent < filter_conf['max_loop_percent']]
+            pdb_csv = pdb_csv[pdb_csv.modeled_seq_len > 45]
             pdb_csv = pdb_csv.sort_values('modeled_seq_len', ascending=False)
             
         if maxlen is not None:
@@ -378,11 +379,25 @@ class TrainSampler(torch.utils.data.Sampler):
         else:
             raise ValueError(f'Invalid sample mode: {self._sample_mode}')
     
-#     def getbb(self, idx):
-#         csv_row = self._data_csv.iloc[idx]
-#         processed_file_path = csv_row['processed_path']
-#         chain_feats = self.dataset._process_csv_row(processed_file_path)
-#         return chain_feats  
+    def generate_batch_indices(self, protein_length=128):
+
+        if self._sample_mode == 'length_batch':
+            # Each batch contains multiple proteins of the same length.
+            sel_length = self._data_csv.loc[self._data_csv['modeled_seq_len']==protein_length]
+            sampled_order = sel_length.groupby('modeled_seq_len').sample(
+                self._batch_size, replace=True, random_state=self.epoch) #one batch per length
+            return sampled_order['index'].tolist()[:self._batch_size]
+        
+        elif self._sample_mode == 'single_length':
+            rand_index = self._data_csv['index'].to_numpy()
+            np.random.shuffle(rand_index)
+            rand_index = rand_index[:(self._batch_size)] #drop last batch
+            return rand_index
+        else:
+            raise ValueError(f'Invalid sample mode: {self._sample_mode}')
+
+
+
             
     def __len__(self):
         return len(self.csv)

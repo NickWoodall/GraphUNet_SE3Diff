@@ -193,9 +193,9 @@ class Experiment:
         
         
         self.dataset = PDBDataSet_GraphCon.smallPDBDataset( self._diffuser , meta_data_path = self.meta_data_path, 
-                             filter_dict=False, maxlen=self.limit, t_range=self.t_range, swap_metadir=self.swap_metadir)
+                             filter_dict=True, maxlen=self.limit, t_range=self.t_range, swap_metadir=self.swap_metadir)
         
-        self.train_sample = PDBDataSet_GraphCon.TrainSampler(self.B, self.dataset, sample_mode='single_length')
+        self.train_sample = PDBDataSet_GraphCon.TrainSampler(self.B, self.dataset, sample_mode=self.conf['sample_mode'])
         
         train_dL = torch.utils.data.DataLoader(self.dataset, sampler=self.train_sample,
                                                      batch_size=self.B, shuffle=False, collate_fn=None)
@@ -235,7 +235,7 @@ class Experiment:
 
                 
         self.conf['trained_steps']=self.trained_steps
-        self.conf['epoch']=self.trained_steps
+        self.conf['epoch']=self.num_epoch+self.trained_epochs
         ckpt_path = os.path.join(self.ckpt_dir, f'step_{self.trained_steps}.pth')
         du.write_checkpoint(
             ckpt_path,
@@ -434,7 +434,7 @@ class Experiment:
             
         return eval_dict
     
-    def eval_fn(self, valid_loader, eval_dir, epoch=0, input_t=None, max_cycles=10):
+    def eval_fn(self, valid_loader, eval_dir, epoch=0, input_t=None, max_cycles=10, protein_length=128):
         
         train_feats = next(iter(valid_loader))
 
@@ -446,9 +446,8 @@ class Experiment:
             vis_t = np.ones((self.B,))*input_t
         else:
             vis_t = input_t
-            
-            
-        index_in = np.random.choice(np.arange(len(self.dataset)), size=len(vis_t))
+
+        index_in = self.train_sample.generate_batch_indices(protein_length=protein_length)
         batch_feats = self.generate_tbatch( index_in,vis_t)
 
         batch_feats= tree.map_structure(
