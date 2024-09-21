@@ -144,22 +144,25 @@ class smallPDBDataset(torch.utils.data.Dataset):
     def __init__(
             self,
             diffuser,
+            conf,
             meta_data_path = '/mnt/h/datasets/p200/metadata.csv',
             filter_dict=True,
             maxlen=None,
             is_training=True,
             input_t=None,
             t_range=None,
-            swap_metadir=False
+            swap_metadir=False,
         ):
         #self._log = logging.getLogger(__name__)
         self._is_training = is_training
         self.meta_data_path = meta_data_path
         self.swap_metadir=swap_metadir
+        self.conf = conf
         self._init_metadata(filter_dict=filter_dict,maxlen=maxlen) #includes create split that saves self.csv
         self._diffuser = diffuser
         self.input_t = input_t
         self.t_range = t_range
+        
 
         
     @property
@@ -191,8 +194,8 @@ class smallPDBDataset(torch.utils.data.Dataset):
                            'max_loop_percent': 0.5}
             pdb_csv = pdb_csv[pdb_csv.oligomeric_detail.isin(filter_conf['allowed_oligomer'])]
             pdb_csv = pdb_csv[pdb_csv.coil_percent < filter_conf['max_loop_percent']]
-            pdb_csv = pdb_csv[pdb_csv.modeled_seq_len > 45]
-            pdb_csv = pdb_csv[pdb_csv.modeled_seq_len < 1000]
+            pdb_csv = pdb_csv[pdb_csv.modeled_seq_len > self.conf['min_len']]
+            pdb_csv = pdb_csv[pdb_csv.modeled_seq_len < self.conf['max_len']]
             pdb_csv = pdb_csv.sort_values('modeled_seq_len', ascending=False)
             
         if maxlen is not None:
@@ -366,10 +369,22 @@ class TrainSampler(torch.utils.data.Sampler):
         #self._dataset = dataset
         #self._data_csv = self._dataset.csv
     def __iter__(self):
+
+
         if self._sample_mode == 'length_batch':
-            # Each batch contains multiple proteins of the same length.
-            sampled_order = self._data_csv.groupby('modeled_seq_len').sample(
-                self._batch_size, replace=True, random_state=self.epoch) #one batch per length
+            pdb_csv_batched =  self._data_csv.copy()
+            sampled_order = pd.DataFrame(columns= self._data_csv.columns)
+
+            while len(pdb_csv_batched)>1:
+                pdb_csv_batched = pdb_csv_batched.loc[~pdb_csv_batched['index'].isin(sampled_order['index'])].copy()
+                sampled_order_part = pdb_csv_batched.groupby('modeled_seq_len').sample(
+                            4, replace=True, random_state=0) #one batch per length
+                sampled_order = pd.concat((sampled_order,sampled_order_part))
+
+
+            # Each batch contains multiple proteins of the same length., only samples each modeled seq len at max batch each epoch
+            # sampled_order = self._data_csv.groupby('modeled_seq_len').sample(
+            #     self._batch_size, replace=True, random_state=self.epoch) #one batch per length
             return iter(sampled_order['index'].tolist())
         elif self._sample_mode == 'single_length':
             rand_index = self._data_csv['index'].to_numpy()
@@ -385,6 +400,9 @@ class TrainSampler(torch.utils.data.Sampler):
         if self._sample_mode == 'length_batch':
             # Each batch contains multiple proteins of the same length.
             sel_length = self._data_csv.loc[self._data_csv['modeled_seq_len']==protein_length]
+            if len(sel_length)<1:
+                sel_length = self._data_csv.loc[self._data_csv['modeled_seq_len']==self._data_csv['modeled_seq_len'].min()]
+
             sampled_order = sel_length.groupby('modeled_seq_len').sample(
                 self._batch_size, replace=True, random_state=self.epoch) #one batch per length
             return sampled_order['index'].tolist()[:self._batch_size]
