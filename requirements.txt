@@ -1,3 +1,15 @@
+
+
+rsync -azP procmmCIF/ tex1:~/
+
+mkdir -p ~/miniconda3
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
+bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+rm ~/miniconda3/miniconda.sh
+
+
+echo "./home/ubuntu/miniconda3/etc/profile.d/conda.sh" >> ~/.bashrc
+
 conda create -n gud python=3.9 -y \
 conda activate gud 
 conda install pytorch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 pytorch-cuda=11.8 -c pytorch -c nvidia
