@@ -43,9 +43,6 @@ if __name__ == '__main__':
         ckpt_opt = torch.load(args.checkpoint_file)['optimizer']
         conf = torch.load(args.checkpoint_file)['conf']
 
-        with open('configs/pdb200_gun_test.json','r') as f:
-            conf = json.load(f)
-
         exp = Experiment(conf,name=args.name, ckpt_model=ckpt_model, ckpt_opt=ckpt_opt,swap_metadir=True)
 
     else:
