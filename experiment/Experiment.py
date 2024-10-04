@@ -192,7 +192,7 @@ class Experiment:
     def create_dataset(self, fake_valid=True):
         
         
-        self.dataset = PDBDataSet_GraphCon.smallPDBDataset( self._diffuser, self._conf , meta_data_path = self.meta_data_path, 
+        self.dataset = PDBDataSet_GraphCon.smallPDBDataset( self._diffuser, self._conf ,
                              filter_dict=True, maxlen=self.limit, t_range=self.t_range, swap_metadir=self.swap_metadir)
         
         self.train_sample = PDBDataSet_GraphCon.TrainSampler(self.B, self.dataset, sample_mode=self.conf['sample_mode'])
