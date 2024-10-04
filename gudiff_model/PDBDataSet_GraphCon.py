@@ -145,7 +145,6 @@ class smallPDBDataset(torch.utils.data.Dataset):
             self,
             diffuser,
             conf,
-            meta_data_path = '/mnt/h/datasets/p200/metadata.csv',
             filter_dict=True,
             maxlen=None,
             is_training=True,
@@ -155,7 +154,7 @@ class smallPDBDataset(torch.utils.data.Dataset):
         ):
         #self._log = logging.getLogger(__name__)
         self._is_training = is_training
-        self.meta_data_path = meta_data_path
+        self.meta_data_path =  conf['meta_data_path']
         self.swap_metadir=swap_metadir
         self.conf = conf
         self._init_metadata(filter_dict=filter_dict,maxlen=maxlen) #includes create split that saves self.csv
