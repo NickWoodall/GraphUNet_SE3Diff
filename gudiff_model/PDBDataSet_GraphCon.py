@@ -14,6 +14,7 @@ import util.framediff_utils as du
 from openfold.np import residue_constants
 import tree
 import random
+import logging
 #from se3_diffuse import rigid_utils as ru
 
 #Globals from npose for making pdb files
@@ -172,15 +173,15 @@ class smallPDBDataset(torch.utils.data.Dataset):
     def diffuser(self):
         return self._diffuser
 
-    @property
-    def data_conf(self):
-        return self._data_conf
-
     def _init_metadata(self, filter_dict=True, maxlen=None):
         """Initialize metadata."""
         
         #meta_data_path = '/mnt/h/datasets/p200/metadata.csv'
         pdb_csv = pd.read_csv(self.meta_data_path)
+
+
+
+
         
         if self.swap_metadir: #file location is hard code into meta data, this will take the directory location of the meta_data_csv and apply it to the filenames
             dir_path = os.path.dirname(os.path.realpath(self.meta_data_path))
@@ -198,9 +199,11 @@ class smallPDBDataset(torch.utils.data.Dataset):
             pdb_csv = pdb_csv.sort_values('modeled_seq_len', ascending=False)
             
         if maxlen is not None:
-            pdb_csv = pdb_csv[:maxlen]
+            pdb_csv = pdb_csv.sample(n=maxlen)
         #self._create_split(pdb_csv)
         self.csv = pdb_csv
+
+    
     def _create_split(self, pdb_csv):
         # Training or validation specific logic.
         #if self.is_training:
@@ -351,7 +354,7 @@ class smallPDBDataset(torch.utils.data.Dataset):
 
 class TrainSampler(torch.utils.data.Sampler):
 
-    def __init__(self, batch_size, dataset,
+    def __init__(self, batch_size, dataset, data_conf,
                  sample_mode='length_batch'):
         
         self.dataset = dataset
@@ -363,10 +366,38 @@ class TrainSampler(torch.utils.data.Sampler):
         self._sample_mode = sample_mode
         self.sampler_len = len(self._dataset_indices) * self._batch_size
         self.min_t = 1e-3
-        #self._log = logging.getLogger(__name__)
-        #self._data_conf = data_conf
+        self._log = logging.getLogger(__name__)
+        self._data_conf = data_conf
         #self._dataset = dataset
         #self._data_csv = self._dataset.csv
+        if self._sample_mode in ['cluster_length_batch', 'cluster_time_batch']:
+            self._pdb_to_cluster = self._read_clusters()
+            self._max_cluster = max(self._pdb_to_cluster.values())
+            self._log.info(f'Read {self._max_cluster} clusters.')
+            self._missing_pdbs = 0
+            def cluster_lookup(pdb):
+                pdb = pdb.upper()
+                if pdb not in self._pdb_to_cluster:
+                    self._pdb_to_cluster[pdb] = self._max_cluster + 1
+                    self._max_cluster += 1
+                    self._missing_pdbs += 1
+                return self._pdb_to_cluster[pdb]
+            self._data_csv['cluster'] = self._data_csv['pdb_name'].map(cluster_lookup)
+            num_clusters = len(set(self._data_csv['cluster']))
+            self.sampler_len = num_clusters * self._batch_size
+            self._log.info(
+                f'Training on {num_clusters} clusters. PDBs without clusters: {self._missing_pdbs}'
+    )
+
+    def _read_clusters(self):
+        pdb_to_cluster = {}
+        with open(self._data_conf['cluster_path'], "r") as f:
+            for i,line in enumerate(f):
+                for chain in line.split(' '):
+                    pdb = chain.split('_')[0]
+                    pdb_to_cluster[pdb.upper()] = i
+        return pdb_to_cluster
+
     def __iter__(self):
 
 
@@ -379,8 +410,6 @@ class TrainSampler(torch.utils.data.Sampler):
                 sampled_order_part = pdb_csv_batched.groupby('modeled_seq_len').sample(
                             4, replace=True, random_state=0) #one batch per length
                 sampled_order = pd.concat((sampled_order,sampled_order_part))
-
-
             # Each batch contains multiple proteins of the same length., only samples each modeled seq len at max batch each epoch
             # sampled_order = self._data_csv.groupby('modeled_seq_len').sample(
             #     self._batch_size, replace=True, random_state=self.epoch) #one batch per length
@@ -391,6 +420,20 @@ class TrainSampler(torch.utils.data.Sampler):
             num_batches = int(rand_index.shape[0]/self._batch_size)
             rand_index = rand_index[:(num_batches*self._batch_size)] #drop last batch
             return iter(rand_index)
+        elif self._sample_mode == 'cluster_length_batch':
+            # Each batch contains multiple clusters of the same length.
+            sampled_clusters = self._data_csv.groupby('cluster').sample(
+                1, random_state=0)
+            sampled_order = sampled_clusters.groupby('modeled_seq_len').sample(
+                self._batch_size, replace=True, random_state=self.epoch)
+            return iter(sampled_order['index'].tolist())
+        # elif self._sample_mode == 'cluster_time_batch':
+        #     # Each batch contains multiple time steps of a protein from a cluster.
+        #     sampled_clusters = self._data_csv.groupby('cluster').sample(
+        #         1, random_state=self.epoch)
+        #     dataset_indices = sampled_clusters['index'].tolist()
+        #     repeated_indices = np.repeat(dataset_indices, self._batch_size)
+        #     return iter(repeated_indices.tolist())
         else:
             raise ValueError(f'Invalid sample mode: {self._sample_mode}')
     
@@ -411,6 +454,20 @@ class TrainSampler(torch.utils.data.Sampler):
             np.random.shuffle(rand_index)
             rand_index = rand_index[:(self._batch_size)] #drop last batch
             return rand_index
+        elif self._sample_mode == 'cluster_length_batch':
+            # Each batch contains multiple clusters of the same length.
+            sampled_clusters = self._data_csv.groupby('cluster').sample(
+                1, random_state=0)
+            sampled_order = sampled_clusters.groupby('modeled_seq_len').sample(
+                self._batch_size, replace=True, random_state=self.epoch)
+            return iter(sampled_order['index'].tolist())
+        # elif self._sample_mode == 'cluster_time_batch':
+        #     # Each batch contains multiple time steps of a protein from a cluster.
+        #     sampled_clusters = self._data_csv.groupby('cluster').sample(
+        #         1, random_state=self.epoch)
+        #     dataset_indices = sampled_clusters['index'].tolist()
+        #     repeated_indices = np.repeat(dataset_indices, self._batch_size)
+        #     return iter(repeated_indices.tolist())
         else:
             raise ValueError(f'Invalid sample mode: {self._sample_mode}')
 
@@ -434,7 +491,6 @@ class Make_KNN_MP_Graphs():
     #8 long positional encoding
     NODE_FEATURE_DIM_0 = 12
     EDGE_FEATURE_DIM = 1 # 0 or 1 primary seq connection or not
-    NODE_FEATURE_DIM_1 = 2
     
     def __init__(self, mp_stride=4, coord_div=10, cast_type=torch.float32, channels_start=32,
                        ndf1=6, ndf0=32,cuda=True):
@@ -447,6 +503,9 @@ class Make_KNN_MP_Graphs():
         self.cuda = cuda
         self.ndf1 = ndf1 #awkard adding of nodes features to mpGraph
         self.ndf0 = ndf0
+        
+        assert self.ndf1%3==0
+        self.ndf1_div = int(self.ndf1/3)
         
     def create_and_batch(self, bb_dict, n_nodes):
         
@@ -543,7 +602,7 @@ class Make_KNN_MP_Graphs():
         # get node features
         
         node_feats =         {'0': batched_graph.ndata['pe'][:, :self.NODE_FEATURE_DIM_0, None],
-                              '1': batched_graph.ndata['bb_ori'][:,:self.NODE_FEATURE_DIM_1, :3]}
+                              '1': batched_graph.ndata['bb_ori'][:,:self.ndf1_div, :3]}
         node_feats_mp =      {'0': batched_mpgraph.ndata['pe'][:, :self.ndf0, None],
                               '1': torch.ones((batched_mpgraph.num_nodes(),self.ndf1,3))}
         #unused

@@ -83,19 +83,16 @@ class Experiment:
         
         
         self._diffuser = FrameDiffNoise()
-        self._graphmaker =  PDBDataSet_GraphCon.Make_KNN_MP_Graphs(mp_stride = self.stride, 
-                                                           coord_div = self.coord_scale, 
+        self._graphmaker =  PDBDataSet_GraphCon.Make_KNN_MP_Graphs( coord_div = self.coord_scale, 
                                                            cast_type = self.cast_type, 
                                                            channels_start = self.channels_start,
+                                                           mp_stride=conf['stride'],
                                                            ndf1= conf['nodefeats_1'], 
                                                            ndf0= conf['nodefeats_0'],
                                                            cuda=conf['cuda']) #cuda is bool True, mod at some point
         #single_t dataset, for testing
         # sd = smallPDBDataset(fdn , meta_data_path = '/mnt/h/datasets/bCov_4H/metadata.csv', 
         #                      filter_dict=False, maxlen=1000, input_t=0.05)
-        
-
-
         
         self._model = GraphUNet(fiber_start = Fiber({0:12, 1:2}),
                                 fiber_out = Fiber({1:2}),
@@ -104,9 +101,12 @@ class Experiment:
                                 k = conf['topk'],
                                 stride = conf['stride'],
                                 max_degree = 3,
+                                channels= conf['channels'],
                                 channels_div =  conf['channels_div'],
                                 num_heads = conf['num_heads'],
                                 num_layers = conf['num_layers'],
+                                feat_0=conf["nodefeats_0"],
+                                feat_1=conf[ "nodefeats_1"],
                                 edge_feature_dim = conf['edge_feature_dim'],
                                 latent_pool_type = conf['latent_pool_type'],
                                 t_size = conf['t_size'],
@@ -193,9 +193,9 @@ class Experiment:
         
         
         self.dataset = PDBDataSet_GraphCon.smallPDBDataset( self._diffuser, self._conf ,
-                             filter_dict=True, maxlen=self.limit, t_range=self.t_range, swap_metadir=self.swap_metadir)
+                             filter_dict= self._conf['filter_dict'], maxlen=self.limit, t_range=self.t_range, swap_metadir=self.swap_metadir)
         
-        self.train_sample = PDBDataSet_GraphCon.TrainSampler(self.B, self.dataset, sample_mode=self.conf['sample_mode'])
+        self.train_sample = PDBDataSet_GraphCon.TrainSampler(self.B, self.dataset, self._conf, sample_mode=self.conf['sample_mode'])
         
         train_dL = torch.utils.data.DataLoader(self.dataset, sampler=self.train_sample,
                                                      batch_size=self.B, shuffle=False, collate_fn=None)
@@ -428,8 +428,10 @@ class Experiment:
         CC_t_out = CA_t +  batch_feats['C_CA']*self.C_CA_dist
         true_out =  torch.cat((NC_t_out,CA_t,CC_t_out),dim=2).reshape(B,L,3,3)
         
-        NC_nout = (CA_n + batch_feats['N_CA_noised'].reshape(B, L, 3))*self.N_CA_dist 
-        CC_nout = (CA_n + batch_feats['C_CA_noised'].reshape(B, L, 3))*self.C_CA_dist
+        # NC_nout = (CA_n + batch_feats['N_CA_noised'].reshape(B, L, 3))*self.N_CA_dist 
+        # CC_nout = (CA_n + batch_feats['C_CA_noised'].reshape(B, L, 3))*self.C_CA_dist
+        NC_nout = CA_n + batch_feats['N_CA_noised'].reshape(B, L, 3)*self.N_CA_dist 
+        CC_nout = CA_n + batch_feats['C_CA_noised'].reshape(B, L, 3)*self.C_CA_dist
         noise_out =  torch.cat((NC_nout,CA_n,CC_nout),dim=2).reshape(B,L,3,3)
             
         eval_dict = {'true'  : true_out.to('cpu').numpy()*self.coord_scale,

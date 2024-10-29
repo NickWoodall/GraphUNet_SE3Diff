@@ -113,6 +113,8 @@ class GraphUNet(torch.nn.Module):
                  stride=4,
                  max_degree=3,
                  channels=32,
+                 feat_0 = 32,
+                 feat_1 = 6,
                  num_heads = 8,
                  channels_div=4,
                  num_layers = 1,
@@ -144,13 +146,13 @@ class GraphUNet(torch.nn.Module):
         self.embed_t = GaussianFourierProjection_Linear(self.ts, use_deg1=self.use_tdeg1)
         self.t_fiber = Fiber({0:self.ts}) #add for change in fiber with self.concat_t
         
-        self.num_layers = 1
+        self.num_layers = num_layers
         self.num_layers_ca = num_layers_ca
-        self.channels = 32
-        self.feat0 = 32
-        self.feat1 = 6
-        self.channels_div = 4
-        self.num_heads = 8
+        self.channels = channels
+        self.feat0 = feat_0
+        self.feat1 = feat_1
+        self.channels_div = channels_div
+        self.num_heads = num_heads
         self.mult = int(stride/2)
         self.fiber_edge=Fiber({0:edge_feature_dim})
         self.edge_feat_dim = edge_feature_dim

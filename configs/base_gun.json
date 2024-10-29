@@ -30,6 +30,7 @@
     "dataset_max": 5000,
     "min_len":45,
     "max_len":500,
+    "filter_dict": false ,
     "meta_data_path": "/mnt/h/datasets/bCov_4H/metadata.csv",
     "sample_mode": "single_length",
     "ckpt_dir": "GUN_checkpoints/",
