@@ -1,10 +1,11 @@
 
 
-rsync -azP procmmCIF/ tex1:~/
+rsync -azP procmmCIF tex1:~/
 
 mkdir -p ~/miniconda3
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
-bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+
+bash miniconda.sh -u 
 rm ~/miniconda3/miniconda.sh
 
 
@@ -13,18 +14,16 @@ echo "./home/ubuntu/miniconda3/etc/profile.d/conda.sh" >> ~/.bashrc
 conda create -n gud python=3.9 -y \
 conda activate gud 
 conda install pytorch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 pytorch-cuda=11.8 -c pytorch -c nvidia -y
-conda install pandas -y
-
-conda install -c dglteam/label/th21_cu118 dgl
-conda install pandas -y 
-conda install numba -y
-conda install packaging -y
-conda install torchdata -y
+conda install pandas -y  
+conda install -y -c dglteam/label/th21_cu118 dgl 
+conda install numba -y 
+conda install packaging -y 
+conda install torchdata -y 
 
 
 pip install  dgl -f https://data.dgl.ai/wheels/torch-2.1/cu121/repo.html
 pip3 install torch torchvision torchaudio 
-pip install numba 
+#pip install numba 
 pip install e3nn 
 pip install dm-tree 
 pip install biopython 
