@@ -162,7 +162,7 @@ class smallPDBDataset(torch.utils.data.Dataset):
         self._diffuser = diffuser
         self.input_t = input_t
         self.t_range = t_range
-        
+        self.verbose = True
 
         
     @property
@@ -198,7 +198,7 @@ class smallPDBDataset(torch.utils.data.Dataset):
             pdb_csv = pdb_csv[pdb_csv.modeled_seq_len < self.conf['max_len']]
             pdb_csv = pdb_csv.sort_values('modeled_seq_len', ascending=False)
             
-        if maxlen is not None:
+        if maxlen >1:
             pdb_csv = pdb_csv.sample(n=maxlen)
         #self._create_split(pdb_csv)
         self.csv = pdb_csv
@@ -304,6 +304,8 @@ class smallPDBDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         example_idx = idx
         csv_row = self.csv.iloc[example_idx]
+        if self.verbose:
+            print(csv_row['pdb_name'], csv_row['modeled_seq_len'], 'cluster: ' , csv_row['cluster'] )
         if 'pdb_name' in csv_row:
             pdb_name = csv_row['pdb_name']
         elif 'chain_name' in csv_row:
@@ -423,10 +425,26 @@ class TrainSampler(torch.utils.data.Sampler):
         elif self._sample_mode == 'cluster_length_batch':
             # Each batch contains multiple clusters of the same length.
             sampled_clusters = self._data_csv.groupby('cluster').sample(
-                1, random_state=0)
+                1, random_state=1001+self.epoch)
             sampled_order = sampled_clusters.groupby('modeled_seq_len').sample(
-                self._batch_size, replace=True, random_state=self.epoch)
-            return iter(sampled_order['index'].tolist())
+                self._batch_size, replace=True, random_state=self.epoch+1001)
+            n = self._batch_size
+            so = sampled_order 
+            # Calculate the number of blocks
+            num_blocks = len(so) // n
+
+            # Create an array of block indices
+            block_indices = np.arange(num_blocks)
+
+            # Shuffle the block indices
+            np.random.shuffle(block_indices)
+            # Create a mask based on the shuffled block indices
+            mask = np.hstack([np.arange(i*n, (i+1)*n) for i in block_indices])
+            # Apply the mask to the DataFrame to reorder it in shuffled blocks
+            shuffled_df = so.iloc[mask].reset_index(drop=True)
+
+
+            return iter(shuffled_df['index'].tolist())
         # elif self._sample_mode == 'cluster_time_batch':
         #     # Each batch contains multiple time steps of a protein from a cluster.
         #     sampled_clusters = self._data_csv.groupby('cluster').sample(
@@ -454,13 +472,30 @@ class TrainSampler(torch.utils.data.Sampler):
             np.random.shuffle(rand_index)
             rand_index = rand_index[:(self._batch_size)] #drop last batch
             return rand_index
+        
         elif self._sample_mode == 'cluster_length_batch':
             # Each batch contains multiple clusters of the same length.
             sampled_clusters = self._data_csv.groupby('cluster').sample(
                 1, random_state=0)
             sampled_order = sampled_clusters.groupby('modeled_seq_len').sample(
                 self._batch_size, replace=True, random_state=self.epoch)
-            return iter(sampled_order['index'].tolist())
+              # Each batch contains multiple clusters of the same length.
+            n = self._batch_size
+            so = sampled_order 
+            # Calculate the number of blocks
+            num_blocks = len(so) // n
+
+            # Create an array of block indices
+            block_indices = np.arange(num_blocks)
+
+            # Shuffle the block indices
+            np.random.shuffle(block_indices)
+            # Create a mask based on the shuffled block indices
+            mask = np.hstack([np.arange(i*n, (i+1)*n) for i in block_indices])
+            # Apply the mask to the DataFrame to reorder it in shuffled blocks
+            shuffled_df = so.iloc[mask].reset_index(drop=True)
+
+            return shuffled_df['index'].tolist()[:self._batch_size]
         # elif self._sample_mode == 'cluster_time_batch':
         #     # Each batch contains multiple time steps of a protein from a cluster.
         #     sampled_clusters = self._data_csv.groupby('cluster').sample(
@@ -559,8 +594,8 @@ class Make_KNN_MP_Graphs():
             pe_mp = torch.cat(
                               (pe.to(caXYZ.device),
                               torch.zeros( (pe.shape[0],
-                                            self.channels_start-pe.shape[1]),
-                                                device=caXYZ.device))
+                                            self.ndf0-pe.shape[1]),
+                                                device=caXYZ.device)) # had channels start_0, originally
                                                                      ,axis=1)
             mpGraph.ndata['pe'] = torch.cat((pe_mp,pe_mp[mp_node_indx]))
             mpGraph.edata['con'] = torch.zeros((mpGraph.num_edges(),1),device=caXYZ.device)
