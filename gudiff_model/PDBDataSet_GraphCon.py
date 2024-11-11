@@ -162,7 +162,7 @@ class smallPDBDataset(torch.utils.data.Dataset):
         self._diffuser = diffuser
         self.input_t = input_t
         self.t_range = t_range
-        self.verbose = True
+        self.verbose = False
 
         
     @property
