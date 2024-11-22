@@ -384,7 +384,7 @@ class GraphUNet(torch.nn.Module):
         #SE3 Attention Transformer, c_alpha
         embed_t = self.embed_t(batched_t)
         t_nf = self.concat_t(nf, embed_t, use_deg1=self.use_tdeg1) #concat_t on
-        nf_ca_down_out = self.down_ca(b_graph, t_nf, ef)
+        nf_ca_down_out = self.down_ca(b_graph, t_nf, ef)  
 
         #concatenate on midpoints feats
         

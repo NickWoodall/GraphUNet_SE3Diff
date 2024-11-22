@@ -19,6 +19,21 @@ from data_rigid_diffuser import rigid_utils as ru
 import copy
 import util.pdb_writer 
 
+class EMA(torch.nn.Module):
+    def __init__(self, mu):
+        super(EMA, self).__init__()
+        self.mu = mu
+        self.shadow = {}
+
+    def register(self, name, val):
+        self.shadow[name] = val.clone()
+
+    def forward(self, name, x):
+        assert name in self.shadow
+        new_average = (1.0 - self.mu) * x + self.mu * self.shadow[name]
+        self.shadow[name] = new_average.clone()
+        return new_average
+
 
 class Experiment:
 
@@ -120,19 +135,23 @@ class Experiment:
         num_parameters = sum(p.numel() for p in self._model.parameters())
         self.num_parameters = num_parameters
         self._log.info(f'Number of model parameters {num_parameters}')
-#         self._optimizer = EMA(0.980)
-#         for name, param in self._model.named_parameters():
-#             if param.requires_grad:
-#                 self._optimizer.register(name, param.data)
+
 
         if ckpt_model is not None:
             ckpt_model = {k.replace('module.', ''):v for k,v in ckpt_model.items()}
             self._model.load_state_dict(ckpt_model, strict=True)
         
+        if  'EMA' in list(conf.keys()):
+            self._optimizer = torch.optim.Adam( self._model.parameters(),
+                                                        lr=conf['learning rate'],
+                                                        weight_decay=conf['weight_decay'])
+        else:
         
-        self._optimizer = torch.optim.Adam( self._model.parameters(),
-                                                       lr=conf['learning rate'],
-                                                       weight_decay=conf['weight_decay'])
+            self._optimizer = EMA(conf['EMA'])
+            for name, param in self._model.named_parameters():
+                if param.requires_grad:
+                    self._optimizer.register(name, param.data)
+
         if ckpt_opt is not None:
             self._optimizer.load_state_dict(ckpt_opt)
             fu.optimizer_to(self._optimizer, self.device)
