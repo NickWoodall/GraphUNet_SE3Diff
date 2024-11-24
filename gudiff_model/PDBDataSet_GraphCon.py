@@ -712,6 +712,9 @@ def build_npose_from_coords(coords_in):
 
 def dump_coord_pdb(coords_in, fileOut='fileOut.pdb'):
     
-    npose =  build_npose_from_coords(coords_in)
-    nu.dump_npdb(npose,fileOut)
+    try:
+        npose =  build_npose_from_coords(coords_in)
+        nu.dump_npdb(npose,fileOut)
+    except AssertionError:
+        print(f'Assertion Error on coord construction:{fileOut}')
         

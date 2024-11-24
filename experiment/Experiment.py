@@ -53,6 +53,9 @@ class Experiment:
 #         with open(config_path, 'r') as file:
 #             config = yaml.safe_load(file)
 #         conf = Struct(config)
+        #topk => protein length/stride
+
+
         dt_string = datetime.now().strftime("%dD_%mM_%YY_%Hh_%Mm_%Ss")
         dt_string_short = datetime.now().strftime("%dD_%mM_%YY")
         
@@ -141,16 +144,22 @@ class Experiment:
             ckpt_model = {k.replace('module.', ''):v for k,v in ckpt_model.items()}
             self._model.load_state_dict(ckpt_model, strict=True)
         
-        if  'EMA' in list(conf.keys()):
+        self.EMA = None
+        if  'EMA' not in list(conf.keys()):
             self._optimizer = torch.optim.Adam( self._model.parameters(),
                                                         lr=conf['learning rate'],
                                                         weight_decay=conf['weight_decay'])
         else:
         
-            self._optimizer = EMA(conf['EMA'])
+            self.EMA = EMA(conf['EMA'])
+            self._optimizer = torch.optim.Adam( self._model.parameters(),
+                                            lr=conf['learning rate'],
+                                            weight_decay=conf['weight_decay'])
+
+
             for name, param in self._model.named_parameters():
                 if param.requires_grad:
-                    self._optimizer.register(name, param.data)
+                    self.EMA.register(name, param.data)
 
         if ckpt_opt is not None:
             self._optimizer.load_state_dict(ckpt_opt)
@@ -352,6 +361,13 @@ class Experiment:
         
         loss, aux_data = self.loss_fn(batch_feats, noised_dict)
         loss.backward()
+
+        if self.EMA is not None:
+
+            for name, param in self._model.named_parameters():
+                if param.requires_grad:
+                        param.data = self.EMA(name, param.data)
+
         self._optimizer.step()
         loss_out = loss.detach().cpu()
         return loss_out , aux_data
@@ -409,7 +425,7 @@ class Experiment:
         return batch_feats
     
     def eval_model(self, batch_feats, noised_dict, t_val=None):
-    
+        print('eval_start')
         L = batch_feats['CA'].shape[1]
         B = batch_feats['CA'].shape[0]
         CA_t  = batch_feats['CA']
@@ -457,6 +473,8 @@ class Experiment:
                     'noise'      : noise_out.to('cpu').numpy()*self.coord_scale,
                     'pred'       : pred.to('cpu').numpy()*self.coord_scale,
                     'loss'       : tloss.to('cpu').numpy()}
+        
+        print('eval_end')
             
         return eval_dict
     
